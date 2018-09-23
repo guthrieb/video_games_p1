@@ -42,11 +42,11 @@
 //    	}
 //    	
 //    	if (keyCode == LEFT) {
-//    		tanks[currentTank].rotateLeft = true;
+//    		tanks[currentTank].isRotatingLeft = true;
 //    	}
 //    	
 //    	if (keyCode == RIGHT) {
-//    		tanks[currentTank].rotateRight = true;
+//    		tanks[currentTank].isRotatingRight = true;
 //    	}
 //    }
 //    
@@ -61,11 +61,11 @@
 //    	}
 //    	
 //    	if (keyCode == LEFT) {
-//    		tanks[currentTank].rotateLeft = false;
+//    		tanks[currentTank].isRotatingLeft = false;
 //    	}
 //    	
 //    	if (keyCode == RIGHT) {
-//    		tanks[currentTank].rotateRight = false;
+//    		tanks[currentTank].isRotatingRight = false;
 //    	}
 //    }
 //
