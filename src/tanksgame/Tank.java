@@ -1,25 +1,77 @@
 package tanksgame;
 
-import engine.*;
+import ai.AI;
+import engine.CollidableObject;
+import engine.Drawable;
+import engine.Force;
+import engine.ForceInfluencedObject;
 import processing.core.PApplet;
+import processing.core.PConstants;
 import processing.core.PVector;
 
 public class Tank extends ForceInfluencedObject implements Drawable, CollidableObject {
-    boolean isDrivingLeft = false;
-    boolean isDrivingRight = false;
-    boolean isRotatingLeft = false;
-    boolean isRotatingRight = false;
-    boolean isPoweringDown = false;
-    boolean isPoweringUp = false;
-    private String id;
+    private static final int NO_OF_BOOSTER_FLAMES = 4;
+    private static final int TANK_MOVEMENT_POWER = 100;
+    private boolean isDrivingLeft = false;
+    private boolean isDrivingRight = false;
+    private boolean isRotatingLeft = false;
+    private boolean isRotatingRight = false;
+    private boolean isPoweringDown = false;
+    private boolean isPoweringUp = false;
+    private int score = 0;
+    private boolean aiControlled;
+    private AI ai;
 
-    private static final int movingSpeed = 2;
     private static final double rotationSpeed = 0.01;
 
     private static final int BARREL_LENGTH = 30;
 
     private float firingPower = 20;
     private float firingAngle;
+    private int fuel;
+    private final int maxFuel;
+    private boolean isBoosting;
+    private final int colour;
+
+    public void startRotatingLeft() {
+        isRotatingLeft = true;
+    }
+
+    public void stopRotatingLeft() {
+        isRotatingLeft = false;
+    }
+
+    public void startRotatingRight() {
+        isRotatingRight = true;
+    }
+
+    public void stopRotatingRight() {
+        isRotatingRight = false;
+    }
+
+    public void startPoweringDown() {
+        isPoweringDown = true;
+    }
+
+    public void stopPoweringDown() {
+        isPoweringDown = false;
+    }
+
+    public void startPoweringUp() {
+        isPoweringUp = true;
+    }
+
+    public void stopPoweringUp() {
+        isPoweringUp = false;
+    }
+
+    void startDrivingLeft() {
+        isDrivingLeft = true;
+    }
+
+    void startDrivingRight() {
+        isDrivingRight = true;
+    }
 
     void stopDrivingLeft() {
         isDrivingLeft = false;
@@ -29,29 +81,59 @@ public class Tank extends ForceInfluencedObject implements Drawable, CollidableO
         isDrivingRight = false;
     }
 
-    Tank(PApplet parent, String id, int xpos, int ypos, int xdim, int ydim, float firingAngle, int mass) {
-        super(parent, xpos, ypos, xdim, ydim, mass, true);
+    public Tank(String id, boolean aiControlled, PApplet parent, int xpos, int ypos, int xdim, int ydim, float firingAngle, double mass,
+                float dampingRate, int maxFuel, int initialFuel, int colour) {
+        super(id, parent, xpos, ypos, xdim, ydim, mass, dampingRate, true);
         this.id = id;
         this.firingAngle = firingAngle;
+        this.maxFuel = maxFuel;
+        this.fuel = initialFuel;
+        this.colour = colour;
+        this.aiControlled = aiControlled;
+        if(aiControlled) {
+            this.ai = new AI(this);
+        }
+    }
+
+    public Tank copy() {
+        return new Tank(id, aiControlled, parent, (int) getXpos(), (int) getYpos(), (int) getXdim(), (int) getYdim(), firingAngle, mass, dampingRate, maxFuel, fuel, colour);
     }
 
     public float getFiringAngle() {
         return firingAngle;
     }
 
-    private void drive() {
+    private void drive(int movementPower) {
         if (isDrivingLeft) {
-            addForce(new Force(-10, 0));
+            addForce(new Force(- movementPower, 0));
         }
 
         if (isDrivingRight) {
-            addForce(new Force(10, 0));
+            addForce(new Force(movementPower, 0));
+        }
+    }
+
+    void startBoosting() {
+        if (fuel > 0) {
+            isBoosting = true;
+        }
+    }
+
+    void stopBoosting() {
+        isBoosting = false;
+    }
+
+    private void boost() {
+        if (isBoosting && fuel > 0) {
+            addForce(new Force(0, -1200));
+            fuel--;
         }
     }
 
     void update() {
-        drive();
-        rotateCannon();
+        drive(TANK_MOVEMENT_POWER);
+        boost();
+        rotateCannon(GameWorld.ROTATION_LIMIT);
         handlePower();
     }
 
@@ -65,22 +147,22 @@ public class Tank extends ForceInfluencedObject implements Drawable, CollidableO
         }
     }
 
-    private void rotateCannon() {
-        float firingLimit = (float) (Math.PI / 10);
-        if (isRotatingLeft && firingAngle < (Math.PI + firingLimit)) {
+    private void rotateCannon(float rotationLimit) {
+        if (isRotatingLeft && firingAngle < (Math.PI + rotationLimit)) {
             firingAngle += rotationSpeed;
         }
 
-        if (isRotatingRight && firingAngle > (0 - firingLimit)) {
+        if (isRotatingRight && firingAngle > (0 - rotationLimit)) {
             firingAngle -= rotationSpeed;
         }
     }
 
-    Shell fire(int shellMass) {
+    public Shell fire(int shellMass) {
         PVector cannonBase = cannonBase();
         PVector cannonEnd = cannonEnd(cannonBase, BARREL_LENGTH);
 
-        return new Shell(parent, (int) cannonEnd.x, (int) cannonEnd.y, shellMass, (float) (2 * Math.PI - firingAngle), firingPower);
+        endTurn();
+        return new Shell("shell", parent, (int) cannonEnd.x, (int) cannonEnd.y, shellMass, (float) (2 * Math.PI - firingAngle), firingPower);
     }
 
     private PVector cannonBase() {
@@ -105,13 +187,17 @@ public class Tank extends ForceInfluencedObject implements Drawable, CollidableO
         return tankObj.id.equals(this.id);
     }
 
-    private void drawCannon(PApplet parent, float f, float g, float angle, float length) {
-        parent.line(f, g, f + PApplet.cos(angle) * length, g - PApplet.sin(angle) * length);
+    private void drawCannon(PApplet parent, float xpos, float ypos, float angle, float length) {
+        parent.ellipseMode(PConstants.CENTER);
+        parent.ellipse(xpos, ypos, 10, 10);
+        parent.strokeWeight(3);
+        parent.line(xpos, ypos, xpos + PApplet.cos(angle) * length, ypos - PApplet.sin(angle) * length);
+        parent.strokeWeight(1);
     }
 
     private void powerDown() {
-        if (firingPower > 1) {
-            firingPower -= 0.1;
+        if (firingPower > GameWorld.MINIMUM_FIREPOWER) {
+            firingPower -= 0.2;
         }
     }
 
@@ -120,12 +206,18 @@ public class Tank extends ForceInfluencedObject implements Drawable, CollidableO
     }
 
     private void powerUp() {
-        if (firingPower < 100) {
-            firingPower += 0.1;
+        if (firingPower < GameWorld.MAXIMUM_FIREPOWER) {
+            firingPower += 0.2;
         }
     }
 
+    public AI getAi() {
+        return ai;
+    }
+
     public void endTurn() {
+        stopBoosting();
+
         isPoweringDown = false;
         isPoweringUp = false;
         isRotatingLeft = false;
@@ -136,7 +228,25 @@ public class Tank extends ForceInfluencedObject implements Drawable, CollidableO
 
     @Override
     public void draw() {
-        parent.fill(107, 142, 35);
+        parent.rectMode(PConstants.CORNER);
+        if (isBoosting && fuel > 0) {
+            parent.fill(255, 0, 0);
+            parent.ellipseMode(PConstants.CORNER);
+
+            float flameYPosition = getYpos() + 3 * getDimensions().y / 4;
+            parent.ellipse(getXpos(), flameYPosition, getXdim() / NO_OF_BOOSTER_FLAMES, 10);
+            parent.ellipse(getXpos() + getXdim() / 4, flameYPosition, getXdim() / NO_OF_BOOSTER_FLAMES, 10);
+            parent.ellipse(getXpos() + getXdim() / 2, flameYPosition, getXdim() / NO_OF_BOOSTER_FLAMES, 10);
+            parent.ellipse(getXpos() + 3 * getXdim() / 4, flameYPosition, getXdim() / NO_OF_BOOSTER_FLAMES, 10);
+
+            parent.fill(255, 255, 0);
+            parent.ellipse(getXpos(), flameYPosition, getXdim() / NO_OF_BOOSTER_FLAMES, 6);
+            parent.ellipse(getXpos() + getXdim() / 4, flameYPosition, getXdim() / NO_OF_BOOSTER_FLAMES, 6);
+            parent.ellipse(getXpos() + getXdim() / 2, flameYPosition, getXdim() / NO_OF_BOOSTER_FLAMES, 6);
+            parent.ellipse(getXpos() + 3 * getXdim() / 4, flameYPosition, getXdim() / NO_OF_BOOSTER_FLAMES, 6);
+        }
+        parent.fill(colour);
+
         parent.rect(getXpos(), getYpos(), getXdim(), getYdim());
         PVector firingVector = PVector.fromAngle(getFiringAngle());
         float tankCenterX = getXpos() + getXdim() / 2;
@@ -147,45 +257,31 @@ public class Tank extends ForceInfluencedObject implements Drawable, CollidableO
         drawCannon(parent, tankCenterX, tankCenterY, getFiringAngle(), BARREL_LENGTH);
     }
 
-    @Override
-    public boolean collide() {
-        for (EnvironmentBlock block : TestingEnvironment.staticObjects) {
-            if (CollisionDetection.checkRectangleCollision(position, dimensions, block.getPosition(), block.getDimensions())) {
-                float tankBottom = position.y + dimensions.y;
-                float blockBottom = block.getPosition().y + block.getDimensions().y;
-                float tankRight = position.x + dimensions.x;
-                float blockRight = block.getPosition().x + block.getDimensions().x;
-
-                float bottomOverlap = blockBottom - position.y;
-                float topOverlap = tankBottom - block.getPosition().y;
-                float leftOverlap = tankRight - block.getPosition().x;
-                float rightOverlap = blockRight - position.x;
-
-                if (topOverlap < bottomOverlap && topOverlap < leftOverlap && topOverlap < rightOverlap) {
-                    position.y = block.getPosition().y - dimensions.y;
-                    velocity.y = 0;
-                }
-
-                if (bottomOverlap < topOverlap && bottomOverlap < leftOverlap && bottomOverlap < rightOverlap) {
-                    position.y = block.getPosition().y;
-                    velocity.y = 0;
-                }
-
-                if (leftOverlap < rightOverlap && leftOverlap < topOverlap && leftOverlap < bottomOverlap) {
-                    position.x = block.getPosition().x - dimensions.x - 1;
-                    velocity.x = 0;
-                }
-
-                if (rightOverlap < leftOverlap && rightOverlap < topOverlap && rightOverlap < bottomOverlap) {
-                    position.x = block.getPosition().x + block.getDimensions().x;
-                    velocity.x = 0;
-                }
-            }
-        }
-        return true;
-    }
 
     public float getFiringPower() {
         return firingPower;
+    }
+
+    public int getCurrentFuel() {
+        return fuel;
+    }
+
+    public int getMaxFuel() {
+        return maxFuel;
+    }
+
+    public void refuel(double fuelPercentage) {
+        fuel += (int) (((double) (maxFuel)) * (fuelPercentage / 100));
+        if (fuel > maxFuel) {
+            fuel = maxFuel;
+        }
+    }
+
+    public int getColour() {
+        return colour;
+    }
+
+    public boolean isAiControlled() {
+        return aiControlled;
     }
 }

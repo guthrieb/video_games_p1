@@ -1,14 +1,15 @@
 package tanksgame;
 
 import engine.Drawable;
-import engine.GameObject;
+import engine.ForceInfluencedObject;
 import processing.core.PApplet;
 
-public class EnvironmentBlock extends GameObject implements Drawable {
+public class EnvironmentBlock extends ForceInfluencedObject implements Drawable {
     private final MaterialType type;
+    private boolean fixedInPlace;
 
-    public EnvironmentBlock(PApplet parent, int xpos, int ypos, int xdim, int ydim, boolean destructible, MaterialType type) {
-        super(parent, xpos, ypos, xdim, ydim, destructible);
+    public EnvironmentBlock(String id, PApplet parent, int xpos, int ypos, int xdim, int ydim, boolean destructible, MaterialType type) {
+        super(id, parent, xpos, ypos, xdim, ydim, 100, destructible);
         this.type = type;
     }
 
@@ -19,11 +20,11 @@ public class EnvironmentBlock extends GameObject implements Drawable {
     @Override
     public void draw() {
         if(type == MaterialType.GRASS){
-            parent.fill(40,139,34);
+            parent.fill(0,100,0);
         } else if(type == MaterialType.STONE){
             parent.fill(128,128,128);
         } else if(type == MaterialType.DIRT){
-            parent.fill(139,69,19);
+            parent.fill(101, 67, 33);
         }
         parent.rect(position.x, position.y, dimensions.x, dimensions.y);
     }
