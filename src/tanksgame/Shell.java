@@ -6,8 +6,8 @@ import processing.core.PApplet;
 import java.util.ArrayList;
 
 public class Shell extends ForceInfluencedObject implements Drawable, CollidableObject {
-	private static final int xdim = 4;
-	private static final int ydim = 4;
+	private static final int xdim = 8;
+	private static final int ydim = 8;
 
 	Shell(String id, PApplet parent, int xpos, int ypos, int mass, float firingAngle, float firingStrength) {
 		super(id, parent, xpos, ypos, xdim, ydim, mass, true);

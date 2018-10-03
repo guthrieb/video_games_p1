@@ -13,19 +13,22 @@ public class GameWorld extends PApplet {
     private static final String MAIN_MENU_ID = "main";
     private static final String PLAY_OPTIONS_ID = "play_options";
 
+    static final float K_1 = 0.004f;
+    static final float K_2 = 0.004f;
+
     private static final double TURN_REFUEL_RATE = 10;
     private static final float DAMPING_RATE = 0.95f;
     private static final float STARTING_ANGLE = (float) (Math.PI / 2);
-    public static final int MINIMUM_FIREPOWER = 1;
-    public static final int MAXIMUM_FIREPOWER = 50;
-    private static final float GRAVITATIONAL_CONSTANT = 0.4f;
+    static final int MINIMUM_FIREPOWER = 1;
+    static final int MAXIMUM_FIREPOWER = 50;
+    public static final float GRAVITATIONAL_CONSTANT = 0.4f;
 
     private static final int FLOOR_HEIGHT = 30;
     private static final int BLOCK_WIDTH = 40;
     private static final int SHELL_MASS = 2;
     private static final int TANK_MASS = 2000;
     private static final int MAX_BLOCKS_HEIGHT = 20;
-    private static final int MIN_BLOCKS_HEIGHT = 4;
+    private static final int MIN_BLOCKS_HEIGHT = 10;
     private static final int BLOCK_HEIGHT = 15;
     private static final int TANK_WIDTH = 30;
     private static final int TANK_HEIGHT = 15;
@@ -39,8 +42,10 @@ public class GameWorld extends PApplet {
             "\nrotate cannon right: right arrow" +
             "\nincrease firing power: up arrow" +
             "\ndecrease firing power: down arrow";
+    public static final int WIDTH = 1600;
+    public static final int HEIGHT = 900;
 
-    private ArrayList<EnvironmentBlock> environmentObjects = new ArrayList<>();
+    ArrayList<EnvironmentBlock> environmentObjects = new ArrayList<>();
     public ArrayList<Tank> tanks = new ArrayList<>();
 
     public float windStrength;
@@ -52,7 +57,6 @@ public class GameWorld extends PApplet {
     private Menu menu;
     GameState state = GameState.MAIN_MENU;
     private GameInfo info;
-
 
     private final ArrayList<Integer> colours = new ArrayList<>(Arrays.asList(
             color(204, 0, 0), color(51, 51, 255), color(204, 204, 0), color(255, 108, 108)
@@ -73,7 +77,7 @@ public class GameWorld extends PApplet {
     }
 
     public void settings() {
-        size(1600, 900);
+        size(WIDTH, HEIGHT);
         menu = new Menu(this);
         generateMenus();
 
@@ -115,7 +119,7 @@ public class GameWorld extends PApplet {
 
         for (int i = 0; i < totalAI; i++) {
             Tank tank = new Tank("AI" + (i + 1),
-                    true, this, (tanksAdded * (width - 100) / totalTanks) +
+                    true, options.getAiDifficulty(), this, (tanksAdded * (width - 100) / totalTanks) +
                     ((width - 100) / totalTanks) / 2, 0, TANK_WIDTH, TANK_HEIGHT, STARTING_ANGLE, TANK_MASS,
                     DAMPING_RATE, 100, 100, colours.get(tanksAdded));
             tanks.add(tank);
@@ -125,7 +129,7 @@ public class GameWorld extends PApplet {
 
 
     private void generateMenus() {
-        menu.addMenuBox(MAIN_MENU_ID, new MenuBox(this, "begin_button", "Begin!", width / 2, 2 * height / 6,
+        menu.addMenuBox(MAIN_MENU_ID, new MenuBox(this, "begin_button", "Begin!", width / 2, 2 * height / 7,
                 width / 6, height / 10, () -> {
             try {
                 menu.changePage(PLAY_OPTIONS_ID);
@@ -134,37 +138,46 @@ public class GameWorld extends PApplet {
             }
         }));
 
-        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "play_button", "Play", width / 2, 2 * height / 6,
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "play_button", "Play", width / 2, 2 * height / 7,
                 width / 6, height / 10, this::newGame));
-        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "tank_no_header", "No of tanks", width / 4, 3 * height / 6,
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "tank_no_header", "No of tanks", width / 4, 3 * height / 7,
                 width / 6, height / 10));
-        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "ai_no_header", "No of AI", width / 4, 4 * height / 6,
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "ai_no_header", "No of AI", width / 4, 4 * height / 7,
                 width / 6, height / 10));
-        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "score_limit_header", "Score Limit", width / 4, 5 * height / 6,
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "score_limit_header", "Score Limit", width / 4, 5 * height / 7,
+                width / 6, height / 10));
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "ai_difficulty_header", "AI Difficulty", width / 4, 6 * height / 7,
                 width / 6, height / 10));
 
         menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "tank_no", Integer.toString(options.getNumberOfTanks()),
-                7 * width / 14, 3 * height / 6, width / 14, height / 14));
-        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "tank_no_decrement_button", "-", 6 * width / 14, 3 * height / 6,
+                7 * width / 14, 3 * height / 7, width / 14, height / 14));
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "tank_no_decrement_button", "-", 6 * width / 14, 3 * height / 7,
                 width / 14, height / 14, this::decrementTankNo));
-        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "tank_no_decrement_button", "+", 8 * width / 14, 3 * height / 6,
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "tank_no_decrement_button", "+", 8 * width / 14, 3 * height / 7,
                 width / 14, height / 14, this::incrementTankNo));
 
         menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "ai_no", Integer.toString(options.getTotalAi()),
-                7 * width / 14, 4 * height / 6, width / 14, height / 14));
-        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "ai_no_decrement_button", "-", 6 * width / 14, 4 * height / 6,
+                7 * width / 14, 4 * height / 7, width / 14, height / 14));
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "ai_no_decrement_button", "-", 6 * width / 14, 4 * height / 7,
                 width / 14, height / 14, this::decrementAiNo));
-        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "ai_no_decrement_button", "+", 8 * width / 14, 4 * height / 6,
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "ai_no_decrement_button", "+", 8 * width / 14, 4 * height / 7,
                 width / 14, height / 14, this::incrementAiNo));
 
         menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "score_limit", Integer.toString(options.getScoreLimit()),
-                7 * width / 14, 5 * height / 6, width / 14, height / 14));
-        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "score_limit_decrement_button", "-", 6 * width / 14, 5 * height / 6,
+                7 * width / 14, 5 * height / 7, width / 14, height / 14));
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "score_limit_decrement_button", "-", 6 * width / 14, 5 * height / 7,
                 width / 14, height / 14, this::decrementScoreLimit));
-        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "score_limit_increment_button", "+", 8 * width / 14, 5 * height / 6,
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "score_limit_increment_button", "+", 8 * width / 14, 5 * height / 7,
                 width / 14, height / 14, this::incrementScoreLimit));
 
-        MenuBox instructionsBox = new MenuBox(this, "ai_no_decrement_button", INSTRUCTIONS_TEXT,
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "ai_difficulty", options.getAiDifficultyString(),
+                7 * width / 14, 6 * height / 7, width / 14, height / 14));
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "ai_difficulty_decrement_button", "-", 6 * width / 14, 6 * height / 7,
+                width / 14, height / 14, this::decrementAiDifficulty));
+        menu.addMenuBox(PLAY_OPTIONS_ID, new MenuBox(this, "ai_difficulty_increment_button", "+", 8 * width / 14, 6 * height / 7,
+                width / 14, height / 14, this::incrementAiDifficulty));
+
+        MenuBox instructionsBox = new MenuBox(this, "instructions_text", INSTRUCTIONS_TEXT,
                 12 * width / 14, height / 2,
                 width / 14, height / 14);
         instructionsBox.removeRectangle();
@@ -172,7 +185,20 @@ public class GameWorld extends PApplet {
         menu.addMenuBox(PLAY_OPTIONS_ID, instructionsBox);
         menu.addMenuBox(MAIN_MENU_ID, instructionsBox);
 
+    }
 
+    private void incrementAiDifficulty() {
+        options.incrementAiDifficulty();
+        updateAiDifficultyText();
+    }
+
+    private void updateAiDifficultyText() {
+        menu.updateMenuEntry(options.getAiDifficultyString(), PLAY_OPTIONS_ID, "ai_difficulty");
+    }
+
+    private void decrementAiDifficulty() {
+        options.decrementAiDifficulty();
+        updateAiDifficultyText();
     }
 
     private void incrementScoreLimit() {
@@ -336,10 +362,10 @@ public class GameWorld extends PApplet {
                 timer.countdown();
 
                 if (tanks.get(currentTank).isAiControlled()) {
-                    tanks.get(currentTank).getAi().makeMovements();
+                    tanks.get(currentTank).getAi().makeMove(tanks, environmentObjects, timer.getTimeLeft(), windStrength, GRAVITATIONAL_CONSTANT);
 
                     if (tanks.get(currentTank).getAi().isReadyToFire()) {
-                        currentShell = tanks.get(currentTank).fire(SHELL_MASS);
+                        currentShell = tanks.get(currentTank).getAi().fire(SHELL_MASS);
                         state = GameState.PLAYER_FIRED;
                     }
                 }
@@ -406,6 +432,17 @@ public class GameWorld extends PApplet {
                 block.draw();
             }
 
+//            if(currentTank >= 0)  {
+//                AI newAI = new AI(this, tanks.get(currentTank));
+//
+//                point(tanks.get(currentTank).getXpos(), newAI.calculateBoostHeight());
+//
+//                PVector nearest = newAI.getNearestReachableSurfaceInDirection(environmentObjects, false);
+//                fill(255, 255, 255);
+//                rect(nearest.x, nearest.y, BLOCK_WIDTH, BLOCK_HEIGHT);
+//            }
+
+
             if(state == GameState.GAME_OVER) {
                 textSize(100);
                 fill(tanks.get(currentTank).getColour());
@@ -424,7 +461,7 @@ public class GameWorld extends PApplet {
     private void handleFiring() {
         if (currentShell != null) {
             currentShell.addGravity(GRAVITATIONAL_CONSTANT);
-            currentShell.addDrag(0.001f, 0.001f);
+            currentShell.addDrag(K_1, K_2);
             currentShell.addForce(new Force(windStrength, 0));
             currentShell.move();
 
@@ -474,9 +511,9 @@ public class GameWorld extends PApplet {
 
             windStrength = random(0 - WIND_STRENGTH_LIMIT, WIND_STRENGTH_LIMIT);
 
-            if (tanks.get(currentTank).isAiControlled()) {
-                tanks.get(currentTank).getAi().beginCalculations(tanks.get(currentTank), tanks, environmentObjects, windStrength, GRAVITATIONAL_CONSTANT);
-            }
+//            if (tanks.get(currentTank).isAiControlled()) {
+//                tanks.get(currentTank).getAi().beginCalculations(tanks.get(currentTank), tanks, environmentObjects, windStrength, GRAVITATIONAL_CONSTANT);
+//            }
 
             timer.reset();
         }

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class ForceInfluencedObject extends GameObject implements CollidableObject {
-    final PVector velocity;
+    public final PVector velocity;
     private ArrayList<Force> forces = new ArrayList<>();
     protected final double mass;
     protected float dampingRate = 1;

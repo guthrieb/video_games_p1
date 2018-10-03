@@ -6,22 +6,28 @@ class GameOptions {
     private final int maxTankNo;
     private int totalAi = 0;
     private int scoreLimit = 3;
+    private int aiDifficulty = 0;
+    private int maxAiDifficulty = 2;
 
     public GameOptions(int maxTankNo) {
         this.maxTankNo = maxTankNo;
     }
 
-    public double getGravityStrength() {
-        return gravityStrength;
-    }
-
-    public void setGravityStrength(double gravityStrength) {
-        this.gravityStrength = gravityStrength;
-    }
-
     public void incrementTankNo() {
         if(numberOfTanks < maxTankNo) {
             numberOfTanks++;
+        }
+    }
+
+    public void incrementAiDifficulty() {
+        if(aiDifficulty < maxAiDifficulty) {
+            aiDifficulty++;
+        }
+    }
+
+    public void decrementAiDifficulty() {
+        if(aiDifficulty < maxAiDifficulty) {
+            aiDifficulty++;
         }
     }
 
@@ -65,5 +71,22 @@ class GameOptions {
 
     public int getScoreLimit() {
         return scoreLimit;
+    }
+
+    public String getAiDifficultyString() {
+        switch (aiDifficulty){
+            case 0:
+                return "Easy";
+            case 1:
+                return "Medium";
+            case 2:
+                return "Hard";
+            default:
+                return null;
+        }
+    }
+
+    public int getAiDifficulty() {
+        return aiDifficulty;
     }
 }

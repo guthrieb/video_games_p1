@@ -65,20 +65,34 @@ public class Tank extends ForceInfluencedObject implements Drawable, CollidableO
         isPoweringUp = false;
     }
 
-    void startDrivingLeft() {
+    public void startDrivingLeft() {
         isDrivingLeft = true;
     }
 
-    void startDrivingRight() {
+    public void startDrivingRight() {
         isDrivingRight = true;
     }
 
-    void stopDrivingLeft() {
+    public void stopDrivingLeft() {
         isDrivingLeft = false;
     }
 
-    void stopDrivingRight() {
+    public void stopDrivingRight() {
         isDrivingRight = false;
+    }
+
+    public Tank(String id, boolean aiControlled, int aiDifficulty, PApplet parent, int xpos, int ypos, int xdim, int ydim, float firingAngle, double mass,
+                float dampingRate, int maxFuel, int initialFuel, int colour) {
+        super(id, parent, xpos, ypos, xdim, ydim, mass, dampingRate, true);
+        this.id = id;
+        this.firingAngle = firingAngle;
+        this.maxFuel = maxFuel;
+        this.fuel = initialFuel;
+        this.colour = colour;
+        this.aiControlled = aiControlled;
+        if(aiControlled) {
+            this.ai = new AI(parent, this, aiDifficulty);
+        }
     }
 
     public Tank(String id, boolean aiControlled, PApplet parent, int xpos, int ypos, int xdim, int ydim, float firingAngle, double mass,
@@ -91,12 +105,12 @@ public class Tank extends ForceInfluencedObject implements Drawable, CollidableO
         this.colour = colour;
         this.aiControlled = aiControlled;
         if(aiControlled) {
-            this.ai = new AI(this);
+            this.ai = new AI(parent, this, 0);
         }
     }
 
     public Tank copy() {
-        return new Tank(id, aiControlled, parent, (int) getXpos(), (int) getYpos(), (int) getXdim(), (int) getYdim(), firingAngle, mass, dampingRate, maxFuel, fuel, colour);
+        return new Tank(id, aiControlled, ai.getDifficulty(), parent, (int) getXpos(), (int) getYpos(), (int) getXdim(), (int) getYdim(), firingAngle, mass, dampingRate, maxFuel, fuel, colour);
     }
 
     public float getFiringAngle() {
@@ -113,13 +127,13 @@ public class Tank extends ForceInfluencedObject implements Drawable, CollidableO
         }
     }
 
-    void startBoosting() {
+    public void startBoosting() {
         if (fuel > 0) {
             isBoosting = true;
         }
     }
 
-    void stopBoosting() {
+    public void stopBoosting() {
         isBoosting = false;
     }
 
@@ -130,7 +144,7 @@ public class Tank extends ForceInfluencedObject implements Drawable, CollidableO
         }
     }
 
-    void update() {
+    public void update() {
         drive(TANK_MOVEMENT_POWER);
         boost();
         rotateCannon(GameWorld.ROTATION_LIMIT);

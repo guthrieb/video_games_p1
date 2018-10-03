@@ -10,6 +10,7 @@ public class FiringSimulator implements Runnable {
     private float targetAngle;
     private boolean simulationComplete = false;
     private final Tank toFire;
+    private final Tank targetTank;
     private final ArrayList<Tank> tanks;
     private final ArrayList<EnvironmentBlock> environmentBlocks;
     private final float windStrength;
@@ -20,9 +21,10 @@ public class FiringSimulator implements Runnable {
         return simulationComplete;
     }
 
-    public FiringSimulator(Tank toFire, ArrayList<Tank> tanks, ArrayList<EnvironmentBlock> environmentBlocks,
+    public FiringSimulator(Tank toFire, Tank targetTank, ArrayList<Tank> tanks, ArrayList<EnvironmentBlock> environmentBlocks,
                            float windStrength, float gravitationalConstant) {
         this.toFire = toFire;
+        this.targetTank = targetTank;
         this.tanks = tanks;
         this.environmentBlocks = environmentBlocks;
         this.windStrength = windStrength;
@@ -37,31 +39,7 @@ public class FiringSimulator implements Runnable {
         return targetPower;
     }
 
-    private Tank getClosestTank(Tank toFire, ArrayList<Tank> tanks) {
-
-        float closestDistance = Float.MAX_VALUE;
-        Tank closestTank = null;
-        for (Tank tank : tanks) {
-            if (!tank.getId().equals(toFire.getId())) {
-                float distance = toFire.getPosition().dist(tank.getPosition());
-
-                if (distance < closestDistance) {
-                    closestTank = tank;
-                    closestDistance = distance;
-                }
-            }
-        }
-
-        return closestTank;
-    }
-
     private PVector getBestFiringAngle() {
-        Tank closestTank = getClosestTank(toFire, tanks);
-        return simFiring(closestTank, toFire.copy(), tanks, environmentBlocks, windStrength, gravitationalConstant);
-    }
-
-    private PVector simFiring(Tank closestTank, Tank toFire, ArrayList<Tank> tanks, ArrayList<EnvironmentBlock> environmentBlocks,
-                              float windStrength, float gravityStrength) {
         ArrayList<EnvironmentBlock> cloneEnvironment = (ArrayList<EnvironmentBlock>) environmentBlocks.clone();
 
         for (EnvironmentBlock block : cloneEnvironment) {
@@ -101,14 +79,14 @@ public class FiringSimulator implements Runnable {
                 Shell shell = toFire.fire(2);
 
                 while (shell.collide(tanks) == CollidableObject.NO_COLLISION && shell.collide(cloneEnvironment) == CollidableObject.NO_COLLISION) {
-                    shell.addGravity(gravityStrength);
+                    shell.addGravity(gravitationalConstant);
                     shell.addForce(new Force(windStrength, 0));
-                    shell.addDrag(0.001f, 0.001f);
+                    shell.addDrag(GameWorld.K_1, GameWorld.K_2);
 
                     shell.move();
                 }
 
-                float distance = shell.getPosition().dist(closestTank.getPosition().get().add(closestTank.getXdim() / 2, closestTank.getYdim() / 2));
+                float distance = shell.getPosition().dist(targetTank.getPosition().get().add(targetTank.getXdim() / 2, targetTank.getYdim() / 2));
 
                 if (distance < closestShot) {
                     closestShot = distance;
@@ -146,4 +124,5 @@ public class FiringSimulator implements Runnable {
         targetPower = result.y;
         simulationComplete = true;
     }
+
 }

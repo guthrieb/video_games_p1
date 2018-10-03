@@ -1,7 +1,9 @@
 package tanksgame;
 
+import ai.AI;
 import engine.Drawable;
 import processing.core.PConstants;
+import processing.core.PVector;
 
 public class GameInfo implements Drawable {
     private static final float SCREEN_PERCENTAGE = 0.1f;
@@ -89,6 +91,8 @@ public class GameInfo implements Drawable {
             gameWorld.text((int) Math.ceil(gameWorld.startingTimer.getTimeLeft()/1000f) , gameWorld.width/2f, gameWorld.height/2f);
             gameWorld.textSize(20);
         }
+
+
 
         drawWindspeed();
     }
